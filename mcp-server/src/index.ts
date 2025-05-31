@@ -39,7 +39,12 @@ class TauriDevMcpServer {
       }
     );
 
-    this.httpClient = new TauriHttpClient();
+    // Get HTTP API address from environment variables
+    const apiHost = process.env.TAURI_MCP_HOST || '127.0.0.1';
+    const apiPort = process.env.TAURI_MCP_PORT || '3001';
+    const apiBaseUrl = `http://${apiHost}:${apiPort}/api`;
+
+    this.httpClient = new TauriHttpClient(apiBaseUrl);
     this.setupHandlers();
     this.setupErrorHandling();
   }

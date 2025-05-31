@@ -132,10 +132,15 @@ async function validatePrerequisites(): Promise<void> {
 }
 
 describe('Tauri Dev MCP Integration Tests', () => {
+  // Get HTTP API address from environment variables
+  const apiHost = process.env.TAURI_MCP_HOST || '127.0.0.1';
+  const apiPort = process.env.TAURI_MCP_PORT || '3001';
+  const baseUrl = `http://${apiHost}:${apiPort}`;
+
   const config: TestConfig = {
     tauriAppTimeout: 120000, // 2 minutes
     mcpServerTimeout: 30000,  // 30 seconds  
-    baseUrl: 'http://127.0.0.1:3001',
+    baseUrl,
     mcpServerPath: path.join(__dirname, '..', 'mcp-server', 'dist', 'index.js'),
     exampleAppPath: path.join(__dirname, '..', 'example-app')
   };

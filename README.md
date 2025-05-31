@@ -2,91 +2,50 @@
 
 A Model Context Protocol (MCP) server that enables AI assistants to interact with Tauri applications for development, debugging, and automation.
 
-## Project Structure
+## Features
 
-```
-tauri-dev-mcp/
-├── design/                    # Architecture and API documentation
-├── mcp-server/               # MCP server implementation (TypeScript)
-├── tauri-plugin/             # Tauri plugin (Rust)
-├── example-app/              # Example Tauri app for testing
-└── docs/                     # Usage documentation
-```
-
-## Components
-
-### MCP Server
-- **Language**: TypeScript/Node.js
-- **Transport**: STDIO only
-- **Tools**: 11 tools for DOM inspection, console monitoring, and automation
-
-### Tauri Plugin
-- **Language**: Rust
-- **HTTP API**: Simple REST API on localhost:3001
-- **Features**: WebView bridge, DOM manipulation, event simulation
+- **DOM Inspection**: `inspect_element`, `query_selector`
+- **Console Monitoring**: `get_console_logs`
+- **UI Automation**: `click_element`, `input_text`, `scroll_to_element`, `hover_element`, `select_option`, `check_checkbox`, `press_key`, `wait_for_element`
 
 ## Quick Start
 
-1. **Install dependencies**
+1. **Build components**
    ```bash
-   cd mcp-server && npm install
-   cd ../tauri-plugin && cargo build
+   cd mcp-server && npm install && npm run build
+   cd ../tauri-plugin && cargo build --release
    ```
 
-2. **Run example app**
+2. **Run example app** (with optional custom address)
    ```bash
+   # Default (127.0.0.1:3001)
    cd example-app && npm run tauri dev
+
+   # Custom address
+   cd example-app && TAURI_MCP_HOST=localhost TAURI_MCP_PORT=8080 npm run tauri dev
    ```
 
-3. **Start MCP server**
-   ```bash
-   cd mcp-server && npm start
-   ```
-
-4. **Configure Claude Desktop**
-   Add to your MCP configuration:
+3. **Configure Claude Desktop**
    ```json
    {
      "mcpServers": {
        "tauri-dev": {
          "command": "node",
-         "args": ["./mcp-server/dist/index.js"]
+         "args": ["./mcp-server/dist/index.js"],
+         "env": {
+           "TAURI_MCP_HOST": "localhost",
+           "TAURI_MCP_PORT": "8080"
+         }
        }
      }
    }
    ```
+   > **Note**: Use same `TAURI_MCP_HOST`/`TAURI_MCP_PORT` values in both Tauri app and MCP server config. Omit `env` field for defaults (127.0.0.1:3001).
 
-## Features
-
-### DOM Inspection
-- `inspect_element` - Get detailed element information with styles
-- `query_selector` - Find multiple elements by CSS selector
-
-### Console Monitoring  
-- `get_console_logs` - Retrieve latest console messages (newest first)
-
-### Automation Tools
-- `click_element` - Click elements (left/right/double)
-- `input_text` - Type text into form fields
-- `scroll_to_element` - Scroll to bring elements into view
-- `hover_element` - Trigger hover states
-- `select_option` - Select dropdown options
-- `check_checkbox` - Check/uncheck checkboxes
-- `press_key` - Send keyboard input
-- `wait_for_element` - Wait for element state changes
-
-## CSS Selectors
-
-Supports all standard CSS selectors:
-- Element: `div`, `button`, `input`
-- ID: `#my-button`
-- Class: `.nav-item`, `.btn.primary`
-- Attribute: `[type="email"]`, `[data-testid="submit"]`
-- Descendant: `.container button`, `form > input`
-- Pseudo: `:hover`, `:focus`, `:checked`
-
-See `design/css-selectors-guide.md` for comprehensive examples.
+## Testing
+```bash
+npm test
+```
 
 ## License
-
-MIT License
+MIT

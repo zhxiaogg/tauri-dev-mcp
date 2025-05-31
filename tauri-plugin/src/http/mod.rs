@@ -82,9 +82,17 @@ pub async fn start_server<R: Runtime + 'static>(app: AppHandle<R>) -> anyhow::Re
         .layer(CorsLayer::permissive())
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3001").await?;
+    // Get HTTP API address from environment variable with default
+    let api_host = std::env::var("TAURI_MCP_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let api_port = std::env::var("TAURI_MCP_PORT")
+        .unwrap_or_else(|_| "3001".to_string())
+        .parse::<u16>()
+        .unwrap_or(3001);
     
-    info!("Tauri Dev MCP server listening on http://127.0.0.1:3001");
+    let api_address = format!("{}:{}", api_host, api_port);
+    let listener = tokio::net::TcpListener::bind(&api_address).await?;
+    
+    info!("Tauri Dev MCP server listening on http://{}", api_address);
     
     axum::serve(listener, app_router).await?;
     

@@ -30,6 +30,10 @@ pub async fn execute_tool<R: Runtime>(
     request: ToolRequest,
     results_store: &Arc<Mutex<HashMap<String, Value>>>,
 ) -> Result<ToolResponse, ToolError> {
+    // Get HTTP API address from environment variables
+    let api_host = std::env::var("TAURI_MCP_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let api_port = std::env::var("TAURI_MCP_PORT").unwrap_or_else(|_| "3001".to_string());
+    let api_base_url = format!("http://{}:{}", api_host, api_port);
     // First ensure the inspector is injected
     if let Err(e) = bridge.inject_inspector().await {
         return Err(ToolError {
@@ -47,10 +51,11 @@ pub async fn execute_tool<R: Runtime>(
         r#"
         (async function() {{
             const executionId = '{}';
+            const apiBaseUrl = '{}';
             try {{
                 const result = await window.__TAURI_DEV_MCP.execute('{}', {});
                 // Send result back via HTTP
-                await fetch('http://localhost:3001/api/results', {{
+                await fetch(apiBaseUrl + '/api/results', {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify({{
@@ -61,7 +66,7 @@ pub async fn execute_tool<R: Runtime>(
                 return 'success';
             }} catch (error) {{
                 // Send error back via HTTP
-                await fetch('http://localhost:3001/api/results', {{
+                await fetch(apiBaseUrl + '/api/results', {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify({{
@@ -79,6 +84,7 @@ pub async fn execute_tool<R: Runtime>(
         }})();
         "#,
         execution_id,
+        api_base_url,
         request.tool,
         request.params
     );
