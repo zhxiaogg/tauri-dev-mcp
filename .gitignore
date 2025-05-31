@@ -50,3 +50,5 @@ src-tauri/Cargo.lock
 # MCP Server specific
 mcp-server/dist/
 mcp-server/coverage/
+
+.claude/

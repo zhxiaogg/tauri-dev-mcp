@@ -6,6 +6,7 @@ use tokio::sync::Mutex;
 pub struct WebViewBridge<R: Runtime> {
     app: AppHandle<R>,
     window: Arc<Mutex<Option<WebviewWindow<R>>>>,
+    inspector_injected: Arc<Mutex<bool>>,
 }
 
 impl<R: Runtime> WebViewBridge<R> {
@@ -13,6 +14,7 @@ impl<R: Runtime> WebViewBridge<R> {
         Self {
             app,
             window: Arc::new(Mutex::new(None)),
+            inspector_injected: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -56,8 +58,24 @@ impl<R: Runtime> WebViewBridge<R> {
     }
 
     pub async fn inject_inspector(&self) -> Result<(), String> {
+        // Check if already injected
+        {
+            let injected = self.inspector_injected.lock().await;
+            if *injected {
+                return Ok(());
+            }
+        }
+
+        // Inject the inspector
         let inspector_js = include_str!("../js/inspector.js");
         self.execute_js(inspector_js).await?;
+        
+        // Mark as injected
+        {
+            let mut injected = self.inspector_injected.lock().await;
+            *injected = true;
+        }
+        
         Ok(())
     }
 }

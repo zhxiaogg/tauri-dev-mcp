@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use tauri::Runtime;
 use uuid::Uuid;
+use log::{debug, warn};
 
 use crate::bridge::WebViewBridge;
 
@@ -39,6 +40,7 @@ pub async fn execute_tool<R: Runtime>(
 
     // Generate a unique execution ID
     let execution_id = Uuid::new_v4().to_string();
+    debug!("Executing tool {} with ID: {}", request.tool, execution_id);
     
     // Execute the tool via JavaScript with ID
     let js_code = format!(
@@ -83,11 +85,14 @@ pub async fn execute_tool<R: Runtime>(
 
     // Execute the tool
     if let Err(e) = bridge.execute_js(&js_code).await {
+        warn!("JavaScript execution failed for tool {}: {}", request.tool, e);
         return Err(ToolError {
             code: "EXECUTION_ERROR".to_string(),
             message: e,
         });
     }
+    
+    debug!("JavaScript executed, polling for result with ID: {}", execution_id);
     
     // Poll for result
     let mut attempts = 0;
@@ -97,6 +102,7 @@ pub async fn execute_tool<R: Runtime>(
         // Check if result is available
         if let Ok(mut results) = results_store.lock() {
             if let Some(result_value) = results.remove(&execution_id) {
+                debug!("Found result for execution ID {}: {:?}", execution_id, result_value);
                 // Parse the result
                 if let Some(result_obj) = result_value.as_object() {
                     if let Some(success) = result_obj.get("success").and_then(|v| v.as_bool()) {
@@ -124,10 +130,15 @@ pub async fn execute_tool<R: Runtime>(
         
         attempts += 1;
         if attempts >= MAX_ATTEMPTS {
+            warn!("Timeout waiting for result with ID: {}", execution_id);
             return Err(ToolError {
                 code: "TIMEOUT".to_string(),
                 message: "Timeout waiting for tool execution result".to_string(),
             });
+        }
+        
+        if attempts % 10 == 0 {
+            debug!("Still waiting for result with ID: {} (attempt {})", execution_id, attempts);
         }
         
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;

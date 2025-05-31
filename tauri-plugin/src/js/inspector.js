@@ -8,8 +8,13 @@
     window.__TAURI_DEV_MCP = window.__TAURI_DEV_MCP || {};
     const MCP = window.__TAURI_DEV_MCP;
 
+    // Check if already initialized
+    if (MCP.initialized) {
+        return;
+    }
+
     // Console log buffer
-    MCP.consoleLogs = [];
+    MCP.consoleLogs = MCP.consoleLogs || [];
     MCP.maxLogEntries = 1000;
 
     // Override console methods to capture logs
@@ -39,8 +44,7 @@
                         }
                     }
                     return String(arg);
-                }).join(' '),
-                args: args.map(arg => String(arg))
+                }).join(' ')
             };
             
             MCP.consoleLogs.push(logEntry);
@@ -65,7 +69,6 @@
             tagName: element.tagName,
             id: element.id || undefined,
             className: element.className || undefined,
-            textContent: element.textContent?.substring(0, 1000) || undefined,
             innerHTML: element.innerHTML?.substring(0, 2000) || undefined,
         };
 
@@ -76,10 +79,12 @@
         }
         details.attributes = attributes;
 
+        // Get computed styles (we need this for interactability check regardless)
+        const styles = window.getComputedStyle(element);
+        
         // Add computed styles if requested
         if (includeStyles) {
             const computedStyles = {};
-            const styles = window.getComputedStyle(element);
             
             // Get key styling properties
             const importantProps = [
@@ -146,17 +151,54 @@
 
                 for (let i = 0; i < Math.min(elements.length, limit); i++) {
                     const element = elements[i];
-                    results.push({
+                    
+                    // Get key attributes for identification
+                    const attributes = {};
+                    const importantAttrs = ['href', 'src', 'type', 'name', 'value', 'data-testid', 'role', 'aria-label'];
+                    for (const attr of element.attributes || []) {
+                        if (importantAttrs.includes(attr.name) || attr.name.startsWith('data-')) {
+                            attributes[attr.name] = attr.value;
+                        }
+                    }
+                    
+                    const result = {
                         tagName: element.tagName,
                         id: element.id || undefined,
                         className: element.className || undefined,
-                        textContent: element.textContent?.substring(0, 200) || undefined
+                        attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+                        text: element.textContent?.trim().substring(0, 100) || undefined,
+                        innerText: element.innerText?.trim().substring(0, 100) || undefined
+                    };
+                    
+                    // Add specific properties for certain elements
+                    if (element.tagName === 'A') {
+                        result.href = element.href;
+                    } else if (element.tagName === 'IMG') {
+                        result.src = element.src;
+                        result.alt = element.alt || undefined;
+                    } else if (element.tagName === 'INPUT' || element.tagName === 'SELECT' || element.tagName === 'TEXTAREA') {
+                        result.name = element.name || undefined;
+                        result.type = element.type || undefined;
+                        result.value = element.value || undefined;
+                        result.placeholder = element.placeholder || undefined;
+                    } else if (element.tagName === 'BUTTON') {
+                        result.type = element.type || 'button';
+                    }
+                    
+                    // Clean up undefined values
+                    Object.keys(result).forEach(key => {
+                        if (result[key] === undefined) {
+                            delete result[key];
+                        }
                     });
+                    
+                    results.push(result);
                 }
 
                 return {
                     elements: results,
-                    count: results.length
+                    count: results.length,
+                    total_found: elements.length
                 };
             } catch (error) {
                 throw new Error(`Invalid selector "${params.selector}": ${error.message}`);
@@ -168,15 +210,17 @@
             const limit = params.limit || 50;
             const clearAfter = params.clear_after || false;
 
-            let filteredLogs = MCP.consoleLogs;
+            // Create a copy to avoid modifying the original array
+            let filteredLogs = [...MCP.consoleLogs];
             
             if (level !== 'all') {
-                filteredLogs = MCP.consoleLogs.filter(log => log.level === level);
+                filteredLogs = filteredLogs.filter(log => log.level === level);
             }
 
-            // Sort by newest first
-            filteredLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            // Sort by newest first (most recent at index 0)
+            filteredLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
+            // Apply limit
             const returnedLogs = filteredLogs.slice(0, limit);
 
             if (clearAfter) {
@@ -541,5 +585,8 @@
         }
     };
 
+    // Mark as initialized to prevent re-initialization
+    MCP.initialized = true;
+    
     console.log('Tauri Dev MCP Inspector initialized');
 })();

@@ -14,6 +14,8 @@ export function createMcpError(code: number, message: string, data?: any) {
 }
 
 export function handleTauriError(error: any): Error {
+  console.debug('[Error Handler] Handling error:', error);
+  
   // Handle Tauri plugin errors
   if (error?.error?.code) {
     switch (error.error.code) {

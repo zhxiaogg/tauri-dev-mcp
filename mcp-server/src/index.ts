@@ -47,6 +47,7 @@ class TauriDevMcpServer {
   private setupHandlers(): void {
     // Handle tools/list request
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      console.debug('[MCP Server] Handling tools/list request');
       return {
         tools: [
           {
@@ -309,6 +310,7 @@ class TauriDevMcpServer {
     // Handle tools/call request
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
+      console.debug('[MCP Server] Handling tool call:', name, 'with args:', args);
 
       try {
         switch (name) {
@@ -403,6 +405,7 @@ class TauriDevMcpServer {
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
+        console.debug('[MCP Server] Tool execution error:', error);
         const mcpError = handleTauriError(error);
         throw new McpError(
           ErrorCode.InternalError,

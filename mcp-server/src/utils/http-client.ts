@@ -16,10 +16,12 @@ export class TauriHttpClient {
     tool: string,
     params: any,
   ): Promise<TauriApiResponse<T>> {
+    console.debug('[HTTP Client] Executing tool:', tool, 'with params:', params);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
+      console.debug('[HTTP Client] Sending request to:', `${this.baseUrl}/execute`);
       const response = await fetch(`${this.baseUrl}/execute`, {
         method: "POST",
         headers: {
@@ -39,8 +41,10 @@ export class TauriHttpClient {
       }
 
       const result = (await response.json()) as TauriApiResponse<T>;
+      console.debug('[HTTP Client] Response:', result);
       return result;
     } catch (error) {
+      console.debug('[HTTP Client] Request error:', error);
       clearTimeout(timeoutId);
 
       if (error instanceof Error) {
@@ -93,7 +97,7 @@ export class TauriHttpClient {
         status: string;
         webview_ready: boolean;
       };
-      console.log("health check result: ", result);
+      console.debug('[HTTP Client] Health check result:', result);
       return result.status === "healthy" && result.webview_ready === true;
     } catch {
       return false;

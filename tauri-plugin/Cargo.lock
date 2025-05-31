@@ -3313,6 +3313,7 @@ dependencies = [
  "anyhow",
  "axum",
  "chrono",
+ "log",
  "serde",
  "serde_json",
  "tauri",

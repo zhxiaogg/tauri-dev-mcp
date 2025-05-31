@@ -10,6 +10,7 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use tauri::{AppHandle, Runtime};
 use tower_http::cors::CorsLayer;
+use log::{debug, info};
 
 use crate::bridge::WebViewBridge;
 use crate::tools::{execute_tool, ToolRequest};
@@ -83,7 +84,7 @@ pub async fn start_server<R: Runtime + 'static>(app: AppHandle<R>) -> anyhow::Re
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3001").await?;
     
-    println!("Tauri Dev MCP server listening on http://127.0.0.1:3001");
+    info!("Tauri Dev MCP server listening on http://127.0.0.1:3001");
     
     axum::serve(listener, app_router).await?;
     
@@ -103,6 +104,8 @@ async fn execute<R: Runtime>(
     State(state): State<AppState<R>>,
     Json(request): Json<ExecuteRequest>,
 ) -> Result<Json<ExecuteResponse>, StatusCode> {
+    debug!("Received execute request: {} - {:?}", request.tool, request.params);
+    
     let tool_request = ToolRequest {
         tool: request.tool,
         params: request.params,
@@ -129,7 +132,9 @@ async fn store_result<R: Runtime>(
     State(state): State<AppState<R>>,
     Json(request): Json<StoreResultRequest>,
 ) -> Result<StatusCode, StatusCode> {
+    debug!("Storing result for execution ID: {}", request.id);
     let mut results = state.results.lock().unwrap();
-    results.insert(request.id, request.result);
+    results.insert(request.id.clone(), request.result);
+    debug!("Result stored successfully for ID: {}", request.id);
     Ok(StatusCode::OK)
 }
