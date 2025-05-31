@@ -36,7 +36,8 @@ import {
   CheckboxResult,
   SelectOptionResult,
   KeyPressResult,
-  WaitForElementResult
+  WaitForElementResult,
+  TauriInvokeResult
 } from '../types/test-types';
 
 // Test utilities
@@ -252,6 +253,14 @@ describe('Tauri Dev MCP Integration Tests', () => {
     }, ListToolsResultSchema) as { tools: any[] };
 
     testLog(`MCP server ready with ${toolsResponse.tools.length} tools`);
+    
+    // Verify tauri_invoke tool is available
+    const toolNames = toolsResponse.tools.map((tool: any) => tool.name);
+    if (toolNames.includes('tauri_invoke')) {
+      testLog('✅ tauri_invoke tool found in MCP server');
+    } else {
+      throw new Error('❌ tauri_invoke tool not found in MCP server tools list');
+    }
   }
 
   // Helper function to call MCP tools
@@ -310,6 +319,49 @@ describe('Tauri Dev MCP Integration Tests', () => {
     await cleanupTestResources();
     testLog('✅ Cleanup completed');
     testLog('='.repeat(60));
+  });
+
+  describe('MCP Server Setup', () => {
+    test('should list all expected tools including tauri_invoke', async () => {
+      if (!processes.mcpClient) {
+        throw new Error('MCP client not initialized');
+      }
+
+      const toolsResponse = await processes.mcpClient.request({
+        method: 'tools/list',
+        params: {}
+      }, ListToolsResultSchema) as { tools: Array<{ name: string; description: string; inputSchema: any }> };
+
+      const toolNames = toolsResponse.tools.map(tool => tool.name);
+      
+      // Verify all expected tools are present
+      const expectedTools = [
+        'inspect_element',
+        'query_selector', 
+        'get_console_logs',
+        'click_element',
+        'input_text',
+        'scroll_to_element',
+        'hover_element',
+        'select_option',
+        'check_checkbox',
+        'press_key',
+        'wait_for_element',
+        'tauri_invoke'
+      ];
+
+      for (const expectedTool of expectedTools) {
+        expect(toolNames).toContain(expectedTool);
+      }
+
+      // Verify tauri_invoke tool has proper schema
+      const tauriInvokeTool = toolsResponse.tools.find(tool => tool.name === 'tauri_invoke');
+      expect(tauriInvokeTool).toBeDefined();
+      expect(tauriInvokeTool!.description).toContain('Tauri command');
+      expect(tauriInvokeTool!.inputSchema.properties.command).toBeDefined();
+      expect(tauriInvokeTool!.inputSchema.properties.args).toBeDefined();
+      expect(tauriInvokeTool!.inputSchema.required).toContain('command');
+    });
   });
 
   describe('DOM Inspection Tools', () => {
@@ -519,6 +571,99 @@ describe('Tauri Dev MCP Integration Tests', () => {
     });
   });
 
+  describe('Tauri Command Invocation', () => {
+    test('tauri_invoke should call simple Tauri commands', async () => {
+      const result = await callMcpTool<string>('tauri_invoke', {
+        command: 'get_app_version',
+        args: {}
+      });
+
+      expect(typeof result).toBe('string');
+      expect(result).toBe('1.0.0');
+    });
+
+    test('tauri_invoke should call commands with parameters', async () => {
+      const testName = 'Integration Test Suite';
+      const result = await callMcpTool<string>('tauri_invoke', {
+        command: 'greet',
+        args: {
+          name: testName
+        }
+      });
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain(testName);
+      expect(result).toContain('Hello,');
+      expect(result).toContain('Greetings from Tauri!');
+    });
+
+    test('tauri_invoke should handle complex JSON responses', async () => {
+      const result = await callMcpTool<{
+        platform: string;
+        arch: string;
+        timestamp: string;
+      }>('tauri_invoke', {
+        command: 'get_system_info',
+        args: {}
+      });
+
+      expect(typeof result).toBe('object');
+      expect(result.platform).toBeDefined();
+      expect(result.arch).toBeDefined();
+      expect(result.timestamp).toBeDefined();
+      
+      // Validate platform is a known value
+      expect(['macos', 'windows', 'linux']).toContain(result.platform);
+      
+      // Validate timestamp is ISO format
+      expect(() => new Date(result.timestamp)).not.toThrow();
+    });
+
+    test('tauri_invoke should handle commands with empty args', async () => {
+      // Test omitting args (should default to {})
+      const result1 = await callMcpTool<string>('tauri_invoke', {
+        command: 'get_app_version'
+      });
+
+      // Test explicitly passing empty args
+      const result2 = await callMcpTool<string>('tauri_invoke', {
+        command: 'get_app_version',
+        args: {}
+      });
+
+      expect(result1).toBe(result2);
+      expect(result1).toBe('1.0.0');
+    });
+
+    test('tauri_invoke should handle invalid commands gracefully', async () => {
+      await expect(callMcpTool('tauri_invoke', {
+        command: 'invalid_command_that_does_not_exist',
+        args: {}
+      })).rejects.toThrow();
+    });
+
+    test('tauri_invoke should validate command parameter is required', async () => {
+      await expect(callMcpTool('tauri_invoke', {
+        args: {}
+      })).rejects.toThrow();
+    });
+
+    test('tauri_invoke should handle commands with complex argument structures', async () => {
+      // Test greet command with nested object (if it supported it)
+      const result = await callMcpTool<string>('tauri_invoke', {
+        command: 'greet',
+        args: {
+          name: 'Complex Test',
+          // Add more fields to test argument parsing
+          extra_field: 'should be ignored by greet command'
+        }
+      });
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Complex Test');
+    });
+  });
+
   describe('Error Handling', () => {
     test('should handle invalid selectors gracefully', async () => {
       await expect(callMcpTool('inspect_element', {
@@ -533,6 +678,12 @@ describe('Tauri Dev MCP Integration Tests', () => {
 
       expect(result.found).toBe(false);
       expect(result.element).toBeNull();
+    });
+
+    test('should handle MCP tool that does not exist', async () => {
+      await expect(callMcpTool('non_existent_tool', {
+        param: 'value'
+      })).rejects.toThrow();
     });
   });
 });

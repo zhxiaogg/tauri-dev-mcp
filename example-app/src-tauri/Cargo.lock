@@ -3364,6 +3364,7 @@ dependencies = [
 name = "tauri-dev-mcp-example"
 version = "0.0.0"
 dependencies = [
+ "chrono",
  "env_logger",
  "serde",
  "serde_json",

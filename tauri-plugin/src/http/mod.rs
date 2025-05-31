@@ -13,7 +13,7 @@ use tower_http::cors::CorsLayer;
 use log::{debug, info};
 
 use crate::bridge::WebViewBridge;
-use crate::tools::{execute_tool, ToolRequest};
+use crate::tools::{execute_tool, execute_generic, ToolRequest};
 
 // Storage for JavaScript execution results
 type ResultStore = Arc<Mutex<HashMap<String, serde_json::Value>>>;
@@ -65,6 +65,13 @@ pub struct StoreResultRequest {
     result: serde_json::Value,
 }
 
+#[derive(Deserialize)]
+pub struct InvokeRequest {
+    command: String,
+    args: Option<serde_json::Value>,
+}
+
+
 pub async fn start_server<R: Runtime + 'static>(app: AppHandle<R>) -> anyhow::Result<()> {
     let bridge = Arc::new(WebViewBridge::new(app.clone()));
     let results = Arc::new(Mutex::new(HashMap::new()));
@@ -78,6 +85,7 @@ pub async fn start_server<R: Runtime + 'static>(app: AppHandle<R>) -> anyhow::Re
     let app_router = Router::new()
         .route("/api/health", get(health))
         .route("/api/execute", post(execute))
+        .route("/api/invoke", post(invoke))
         .route("/api/results", post(store_result))
         .layer(CorsLayer::permissive())
         .with_state(state);
@@ -97,6 +105,7 @@ pub async fn start_server<R: Runtime + 'static>(app: AppHandle<R>) -> anyhow::Re
     info!("🔗 Available endpoints:");
     info!("   GET  /api/health  - Check server health");
     info!("   POST /api/execute - Execute MCP tools");
+    info!("   POST /api/invoke  - Invoke Tauri commands");
     
     axum::serve(listener, app_router).await?;
     
@@ -150,4 +159,31 @@ async fn store_result<R: Runtime>(
     debug!("Result stored successfully for ID: {}", request.id);
     Ok(StatusCode::OK)
 }
+
+async fn invoke<R: Runtime>(
+    State(state): State<AppState<R>>,
+    Json(request): Json<InvokeRequest>,
+) -> Result<Json<ExecuteResponse>, StatusCode> {
+    debug!("Received invoke request: {} - {:?}", request.command, request.args);
+    
+    // Use the shared generic execution logic
+    let params = request.args.unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+    
+    match execute_generic(&state.bridge, request.command, params, &state.results, "invoke").await {
+        Ok(response) => Ok(Json(ExecuteResponse {
+            success: true,
+            data: Some(response.data),
+            error: None,
+        })),
+        Err(e) => Ok(Json(ExecuteResponse {
+            success: false,
+            data: None,
+            error: Some(ErrorResponse {
+                code: e.code,
+                message: e.message,
+            }),
+        })),
+    }
+}
+
 

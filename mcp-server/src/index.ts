@@ -17,6 +17,7 @@ import {
   CheckCheckboxInputSchema,
   PressKeyInputSchema,
   WaitForElementInputSchema,
+  TauriInvokeInputSchema,
 } from './types/index.js';
 
 const SERVER_NAME = 'tauri-dev-mcp-server';
@@ -308,6 +309,25 @@ class TauriDevMcpServer {
               required: ['selector']
             },
           },
+          {
+            name: 'tauri_invoke',
+            description: 'Invoke a Tauri command directly. Use this to call any Tauri backend command that has been registered with the invoke_handler. Commands can accept arguments and return any JSON-serializable data.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                command: {
+                  type: 'string',
+                  description: 'The name of the Tauri command to invoke'
+                },
+                args: {
+                  type: 'object',
+                  description: 'Arguments to pass to the Tauri command (must be JSON-serializable)',
+                  default: {}
+                }
+              },
+              required: ['command']
+            },
+          },
         ],
       };
     });
@@ -402,6 +422,13 @@ class TauriDevMcpServer {
             const input = WaitForElementInputSchema.parse(args);
             validateSelector(input.selector);
             const response = await this.httpClient.execute('wait_for_element', input);
+            if (!response.success) throw response.error;
+            return { content: [{ type: 'text', text: JSON.stringify(response.data, null, 2) }] };
+          }
+
+          case 'tauri_invoke': {
+            const input = TauriInvokeInputSchema.parse(args);
+            const response = await this.httpClient.invoke(input.command, input.args);
             if (!response.success) throw response.error;
             return { content: [{ type: 'text', text: JSON.stringify(response.data, null, 2) }] };
           }

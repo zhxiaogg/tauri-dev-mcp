@@ -585,6 +585,31 @@
         }
     };
 
+    // Expose Tauri invoke function
+    MCP.invoke = async function(command, args) {
+        // Check for Tauri v2 API structure
+        if (typeof window.__TAURI__?.core?.invoke === 'function') {
+            try {
+                const result = await window.__TAURI__.core.invoke(command, args || {});
+                return result;
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        // Fallback to v1 API structure
+        if (typeof window.__TAURI__?.invoke === 'function') {
+            try {
+                const result = await window.__TAURI__.invoke(command, args || {});
+                return result;
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        throw new Error('Tauri invoke API not available');
+    };
+
     // Mark as initialized to prevent re-initialization
     MCP.initialized = true;
     

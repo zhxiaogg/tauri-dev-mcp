@@ -214,6 +214,16 @@ export const WaitForElementOutputSchema = BaseResponseSchema.extend({
   }).optional(),
 });
 
+// Tauri Command Invocation
+export const TauriInvokeInputSchema = z.object({
+  command: z.string().describe('Tauri command name to invoke'),
+  args: z.record(z.any()).default({}).describe('Arguments to pass to the Tauri command'),
+});
+
+export const TauriInvokeOutputSchema = BaseResponseSchema.extend({
+  data: z.any().optional().describe('Result returned by the Tauri command'),
+});
+
 // Type exports
 export type InspectElementInput = z.infer<typeof InspectElementInputSchema>;
 export type InspectElementOutput = z.infer<typeof InspectElementOutputSchema>;
@@ -237,6 +247,8 @@ export type PressKeyInput = z.infer<typeof PressKeyInputSchema>;
 export type PressKeyOutput = z.infer<typeof PressKeyOutputSchema>;
 export type WaitForElementInput = z.infer<typeof WaitForElementInputSchema>;
 export type WaitForElementOutput = z.infer<typeof WaitForElementOutputSchema>;
+export type TauriInvokeInput = z.infer<typeof TauriInvokeInputSchema>;
+export type TauriInvokeOutput = z.infer<typeof TauriInvokeOutputSchema>;
 
 // HTTP API Response type
 export interface TauriApiResponse<T = any> {

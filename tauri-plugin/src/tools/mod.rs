@@ -30,11 +30,23 @@ pub async fn execute_tool<R: Runtime>(
     request: ToolRequest,
     results_store: &Arc<Mutex<HashMap<String, Value>>>,
 ) -> Result<ToolResponse, ToolError> {
+    execute_generic(bridge, request.tool, request.params, results_store, "execute").await
+}
+
+// Generic execution function used by both MCP tools and Tauri commands
+pub async fn execute_generic<R: Runtime>(
+    bridge: &Arc<WebViewBridge<R>>,
+    name: String,
+    params: Value,
+    results_store: &Arc<Mutex<HashMap<String, Value>>>,
+    call_type: &str, // "execute" for MCP tools, "invoke" for Tauri commands
+) -> Result<ToolResponse, ToolError> {
     // Get HTTP API address from environment variables
     let api_host = std::env::var("TAURI_MCP_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let api_port = std::env::var("TAURI_MCP_PORT").unwrap_or_else(|_| "3001".to_string());
     let api_base_url = format!("http://{}:{}", api_host, api_port);
-    // First ensure the inspector is injected
+    
+    // First ensure the inspector is injected (needed for both types)
     if let Err(e) = bridge.inject_inspector().await {
         return Err(ToolError {
             code: "INSPECTOR_INJECTION_FAILED".to_string(),
@@ -44,54 +56,104 @@ pub async fn execute_tool<R: Runtime>(
 
     // Generate a unique execution ID
     let execution_id = Uuid::new_v4().to_string();
-    debug!("Executing tool {} with ID: {}", request.tool, execution_id);
+    debug!("Executing {} {} with ID: {}", call_type, name, execution_id);
     
-    // Execute the tool via JavaScript with ID
-    let js_code = format!(
-        r#"
-        (async function() {{
-            const executionId = '{}';
-            const apiBaseUrl = '{}';
-            try {{
-                const result = await window.__TAURI_DEV_MCP.execute('{}', {});
-                // Send result back via HTTP
-                await fetch(apiBaseUrl + '/api/results', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
-                        id: executionId,
-                        result: {{ success: true, data: result }}
-                    }})
-                }});
-                return 'success';
-            }} catch (error) {{
-                // Send error back via HTTP
-                await fetch(apiBaseUrl + '/api/results', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
-                        id: executionId,
-                        result: {{ 
-                            success: false, 
-                            error: {{
-                                message: error.message || 'Unknown error'
-                            }}
-                        }}
-                    }})
-                }}).catch(() => {{}});
-                throw error;
-            }}
-        }})();
-        "#,
-        execution_id,
-        api_base_url,
-        request.tool,
-        request.params
-    );
+    // Generate JavaScript based on call type
+    let js_code = match call_type {
+        "invoke" => {
+            // Tauri command invocation via inspector
+            let args_json = serde_json::to_string(&params).unwrap_or_else(|_| "{}".to_string());
+            format!(
+                r#"
+                (async function() {{
+                    const executionId = '{}';
+                    const apiBaseUrl = '{}';
+                    try {{
+                        const result = await window.__TAURI_DEV_MCP.invoke('{}', {});
+                        // Send result back via HTTP
+                        await fetch(apiBaseUrl + '/api/results', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{
+                                id: executionId,
+                                result: {{ success: true, data: result }}
+                            }})
+                        }});
+                        return 'success';
+                    }} catch (error) {{
+                        // Send error back via HTTP
+                        await fetch(apiBaseUrl + '/api/results', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{
+                                id: executionId,
+                                result: {{ 
+                                    success: false, 
+                                    error: {{
+                                        message: error.message || 'Unknown error'
+                                    }}
+                                }}
+                            }})
+                        }}).catch(() => {{}});
+                        throw error;
+                    }}
+                }})();
+                "#,
+                execution_id,
+                api_base_url,
+                name,
+                args_json
+            )
+        },
+        _ => {
+            // MCP tool execution via inspector
+            format!(
+                r#"
+                (async function() {{
+                    const executionId = '{}';
+                    const apiBaseUrl = '{}';
+                    try {{
+                        const result = await window.__TAURI_DEV_MCP.execute('{}', {});
+                        // Send result back via HTTP
+                        await fetch(apiBaseUrl + '/api/results', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{
+                                id: executionId,
+                                result: {{ success: true, data: result }}
+                            }})
+                        }});
+                        return 'success';
+                    }} catch (error) {{
+                        // Send error back via HTTP
+                        await fetch(apiBaseUrl + '/api/results', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{
+                                id: executionId,
+                                result: {{ 
+                                    success: false, 
+                                    error: {{
+                                        message: error.message || 'Unknown error'
+                                    }}
+                                }}
+                            }})
+                        }}).catch(() => {{}});
+                        throw error;
+                    }}
+                }})();
+                "#,
+                execution_id,
+                api_base_url,
+                name,
+                params
+            )
+        }
+    };
 
-    // Execute the tool
+    // Execute the JavaScript
     if let Err(e) = bridge.execute_js(&js_code).await {
-        warn!("JavaScript execution failed for tool {}: {}", request.tool, e);
+        warn!("JavaScript execution failed for {} {}: {}", call_type, name, e);
         return Err(ToolError {
             code: "EXECUTION_ERROR".to_string(),
             message: e,

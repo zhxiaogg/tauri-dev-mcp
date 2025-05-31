@@ -185,3 +185,8 @@ export interface WaitForElementResult {
     clickable: boolean;
   };
 }
+
+export interface TauriInvokeResult {
+  // Tauri commands can return any JSON-serializable data
+  [key: string]: any;
+}
