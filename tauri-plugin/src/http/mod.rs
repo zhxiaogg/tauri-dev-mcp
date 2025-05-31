@@ -92,7 +92,11 @@ pub async fn start_server<R: Runtime + 'static>(app: AppHandle<R>) -> anyhow::Re
     let api_address = format!("{}:{}", api_host, api_port);
     let listener = tokio::net::TcpListener::bind(&api_address).await?;
     
-    info!("Tauri Dev MCP server listening on http://{}", api_address);
+    info!("🌐 Tauri Dev MCP HTTP API server started");
+    info!("📡 API Address: http://{}", api_address);
+    info!("🔗 Available endpoints:");
+    info!("   GET  /api/health  - Check server health");
+    info!("   POST /api/execute - Execute MCP tools");
     
     axum::serve(listener, app_router).await?;
     
@@ -146,3 +150,4 @@ async fn store_result<R: Runtime>(
     debug!("Result stored successfully for ID: {}", request.id);
     Ok(StatusCode::OK)
 }
+

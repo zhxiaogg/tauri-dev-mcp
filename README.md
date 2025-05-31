@@ -25,7 +25,30 @@ A Model Context Protocol (MCP) server that enables AI assistants to interact wit
    cd example-app && TAURI_MCP_HOST=localhost TAURI_MCP_PORT=8080 npm run tauri dev
    ```
 
-3. **Configure Claude Desktop**
+3. **Add plugin to your Tauri app**
+   ```toml
+   # In your Cargo.toml
+   [dependencies]
+   tauri-dev-mcp = { path = "path/to/tauri-dev-mcp/tauri-plugin" }
+   ```
+
+   ```rust
+   // In your main.rs
+   fn main() {
+       // Initialize logging (choose one):
+       env_logger::init();  // For env_logger
+       // OR
+       tracing_subscriber::fmt::init();  // For tracing
+
+       tauri::Builder::default()
+           .plugin(tauri_dev_mcp::init())
+           .run(tauri::generate_context!())
+           .expect("error while running tauri application");
+   }
+   ```
+   > **Logs**: Plugin will show startup messages like "🌐 Tauri Dev MCP HTTP API server started" and "✅ MCP Inspector injected successfully!"
+
+4. **Configure Claude Desktop**
    ```json
    {
      "mcpServers": {
@@ -46,6 +69,14 @@ A Model Context Protocol (MCP) server that enables AI assistants to interact wit
 ```bash
 npm test
 ```
+
+## Troubleshooting
+
+### Inspector Not Available
+
+**Problem**: `window.__TAURI_DEV_MCP` is undefined
+
+**Solution**: The inspector auto-injects on first tool call. If issues persist, ensure logging is configured and check terminal for error messages.
 
 ## License
 MIT

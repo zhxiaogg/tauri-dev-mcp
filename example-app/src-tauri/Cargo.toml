@@ -16,6 +16,7 @@ tauri-build = { version = "2.0", features = [] }
 tauri = { version = "2.0", features = [] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+env_logger = "0.10"
 
 # Local plugin dependency
 tauri-dev-mcp = { path = "../../tauri-plugin" }
