@@ -51,4 +51,13 @@ src-tauri/Cargo.lock
 mcp-server/dist/
 mcp-server/coverage/
 
+# Test artifacts
+coverage/
+*.log
+integration-test-report.json
+
+# TypeScript
+dist/
+*.tsbuildinfo
+
 .claude/
