@@ -1,0 +1,37 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "productName": "Tauri Dev MCP Example",
+  "version": "0.0.0",
+  "identifier": "com.tauri.dev-mcp-example",
+  "plugins": {},
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "fullscreen": false,
+        "resizable": true,
+        "title": "Tauri Dev MCP Example",
+        "width": 1000,
+        "height": 800,
+        "minWidth": 600,
+        "minHeight": 400
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png"
+    ]
+  }
+}

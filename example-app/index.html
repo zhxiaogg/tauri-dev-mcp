@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tauri Dev MCP Example</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .demo-section {
+        margin: 20px 0;
+        padding: 20px;
+        border: 2px solid #eee;
+        border-radius: 8px;
+      }
+      .demo-section h2 {
+        color: #555;
+        margin-top: 0;
+      }
+      button {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+        font-size: 14px;
+      }
+      button:hover {
+        background: #45a049;
+      }
+      button.secondary {
+        background: #2196F3;
+      }
+      button.secondary:hover {
+        background: #1976D2;
+      }
+      input[type="text"], input[type="email"], textarea {
+        padding: 8px;
+        margin: 5px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      select {
+        padding: 8px;
+        margin: 5px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .form-group {
+        margin: 10px 0;
+      }
+      label {
+        display: inline-block;
+        width: 120px;
+        font-weight: bold;
+      }
+      .log-output {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 120px;
+        background-color: black;
+        color: white;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -60px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+      .dropdown {
+        position: relative;
+        display: inline-block;
+      }
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f9f9f9;
+        min-width: 160px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .dropdown-content a {
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+      }
+      .dropdown-content a:hover {
+        background-color: #f1f1f1;
+      }
+      .dropdown:hover .dropdown-content {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 id="main-title">🚀 Tauri Dev MCP Example</h1>
+      <p>This is a test application for the Tauri Dev MCP server. Use it to test DOM inspection, console monitoring, and automation features.</p>
+
+      <div class="demo-section">
+        <h2>🎯 Basic Elements</h2>
+        <p>Simple elements for testing selectors and inspection:</p>
+        <button id="test-button" class="primary">Test Button</button>
+        <button class="secondary" data-testid="secondary-btn">Secondary Button</button>
+        <div id="info-box" class="info-box">Information Box</div>
+        <span class="highlight">Highlighted Text</span>
+      </div>
+
+      <div class="demo-section">
+        <h2>📝 Form Elements</h2>
+        <p>Various form controls for automation testing:</p>
+        <div class="form-group">
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" placeholder="Enter username">
+        </div>
+        <div class="form-group">
+          <label for="email">Email:</label>
+          <input type="email" id="email" name="email" placeholder="user@example.com">
+        </div>
+        <div class="form-group">
+          <label for="country">Country:</label>
+          <select id="country" name="country">
+            <option value="">Select Country</option>
+            <option value="us">United States</option>
+            <option value="uk">United Kingdom</option>
+            <option value="ca">Canada</option>
+            <option value="au">Australia</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="newsletter" name="newsletter"> Subscribe to newsletter
+          </label>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="radio" name="plan" value="free"> Free Plan
+          </label>
+          <label>
+            <input type="radio" name="plan" value="premium"> Premium Plan
+          </label>
+        </div>
+        <div class="form-group">
+          <label for="comments">Comments:</label><br>
+          <textarea id="comments" name="comments" rows="3" cols="50" placeholder="Enter your comments..."></textarea>
+        </div>
+        <button type="button" onclick="submitForm()">Submit Form</button>
+      </div>
+
+      <div class="demo-section">
+        <h2>🎨 Interactive Elements</h2>
+        <p>Elements with hover effects and dynamic behavior:</p>
+        
+        <div class="tooltip">
+          <button>Hover for Tooltip</button>
+          <span class="tooltiptext">Tooltip text appears here!</span>
+        </div>
+        
+        <div class="dropdown">
+          <button>Dropdown Menu ▼</button>
+          <div class="dropdown-content">
+            <a href="#" onclick="menuClick('Option 1')">Option 1</a>
+            <a href="#" onclick="menuClick('Option 2')">Option 2</a>
+            <a href="#" onclick="menuClick('Option 3')">Option 3</a>
+          </div>
+        </div>
+
+        <button onclick="toggleVisibility()">Toggle Hidden Element</button>
+        <div id="hidden-element" style="display: none; margin-top: 10px; padding: 10px; background: #fffacd; border-radius: 4px;">
+          🎉 This element was hidden and is now visible!
+        </div>
+      </div>
+
+      <div class="demo-section">
+        <h2>📊 Console Logging</h2>
+        <p>Buttons to generate various console messages:</p>
+        <button onclick="console.log('This is a log message')">Log Message</button>
+        <button onclick="console.warn('This is a warning')">Warning</button>
+        <button onclick="console.error('This is an error')">Error</button>
+        <button onclick="console.info('This is info')">Info</button>
+        <button onclick="console.debug('This is debug')">Debug</button>
+        <button onclick="logComplexObject()">Log Object</button>
+        
+        <div class="log-output" id="log-display">
+          Console messages will appear here...
+        </div>
+      </div>
+
+      <div class="demo-section">
+        <h2>⚙️ Dynamic Content</h2>
+        <p>Content that changes over time:</p>
+        <button onclick="addListItem()">Add List Item</button>
+        <button onclick="removeListItem()">Remove Last Item</button>
+        <ul id="dynamic-list">
+          <li>Initial item 1</li>
+          <li>Initial item 2</li>
+        </ul>
+        
+        <button onclick="startCounter()">Start Counter</button>
+        <button onclick="stopCounter()">Stop Counter</button>
+        <div>Counter: <span id="counter">0</span></div>
+      </div>
+
+      <div class="demo-section">
+        <h2>🧪 Test Status</h2>
+        <div id="test-status">Ready for testing...</div>
+        <button onclick="runTests()">Run Test Suite</button>
+      </div>
+    </div>
+
+    <script>
+      let counterInterval = null;
+      let counterValue = 0;
+      let listCounter = 3;
+
+      function submitForm() {
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        console.log('Form submitted:', { username, email });
+        document.getElementById('test-status').textContent = `Form submitted with username: ${username}`;
+      }
+
+      function menuClick(option) {
+        console.log('Menu clicked:', option);
+        document.getElementById('test-status').textContent = `Menu option selected: ${option}`;
+      }
+
+      function toggleVisibility() {
+        const element = document.getElementById('hidden-element');
+        if (element.style.display === 'none') {
+          element.style.display = 'block';
+          console.log('Element made visible');
+        } else {
+          element.style.display = 'none';
+          console.log('Element hidden');
+        }
+      }
+
+      function logComplexObject() {
+        const obj = {
+          name: 'Test Object',
+          values: [1, 2, 3],
+          nested: {
+            property: 'value',
+            array: ['a', 'b', 'c']
+          }
+        };
+        console.log('Complex object:', obj);
+      }
+
+      function addListItem() {
+        const list = document.getElementById('dynamic-list');
+        const li = document.createElement('li');
+        li.textContent = `Dynamic item ${listCounter}`;
+        list.appendChild(li);
+        listCounter++;
+        console.log(`Added list item ${listCounter - 1}`);
+      }
+
+      function removeListItem() {
+        const list = document.getElementById('dynamic-list');
+        if (list.children.length > 0) {
+          list.removeChild(list.lastElementChild);
+          console.log('Removed last list item');
+        } else {
+          console.warn('No items to remove');
+        }
+      }
+
+      function startCounter() {
+        if (counterInterval) return;
+        counterInterval = setInterval(() => {
+          counterValue++;
+          document.getElementById('counter').textContent = counterValue;
+        }, 1000);
+        console.log('Counter started');
+      }
+
+      function stopCounter() {
+        if (counterInterval) {
+          clearInterval(counterInterval);
+          counterInterval = null;
+          console.log('Counter stopped');
+        }
+      }
+
+      function runTests() {
+        console.log('🧪 Starting test suite...');
+        document.getElementById('test-status').textContent = 'Running tests...';
+        
+        setTimeout(() => {
+          console.log('✅ Test 1: DOM element found');
+        }, 500);
+        
+        setTimeout(() => {
+          console.warn('⚠️ Test 2: Performance warning');
+        }, 1000);
+        
+        setTimeout(() => {
+          console.log('✅ Test 3: Form validation passed');
+        }, 1500);
+        
+        setTimeout(() => {
+          console.error('❌ Test 4: Network error simulated');
+        }, 2000);
+        
+        setTimeout(() => {
+          console.log('🎉 Test suite completed');
+          document.getElementById('test-status').textContent = 'All tests completed!';
+        }, 2500);
+      }
+
+      // Add some initial console messages
+      console.log('🚀 Tauri Dev MCP Example App loaded');
+      console.info('This app is ready for MCP testing');
+    </script>
+  </body>
+</html>
