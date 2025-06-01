@@ -148,7 +148,7 @@ class TauriDevMcpServer {
           },
           {
             name: 'input_text',
-            description: 'Input text into form elements (input, textarea, contenteditable) by CSS selector. Optionally clears existing text first.',
+            description: 'Input text into form elements (input, textarea, contenteditable) by CSS selector. Simulates realistic user input with proper event sequence.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -167,7 +167,12 @@ class TauriDevMcpServer {
                 },
                 trigger_events: {
                   type: 'boolean',
-                  description: 'Trigger input/change events for validation',
+                  description: 'Trigger realistic input events (focus, input, change)',
+                  default: true
+                },
+                blur_after: {
+                  type: 'boolean',
+                  description: 'Blur the element after input to complete interaction',
                   default: true
                 }
               },

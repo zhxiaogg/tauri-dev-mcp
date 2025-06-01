@@ -299,12 +299,20 @@
                     throw new Error(`Element is not a text input: ${params.selector}`);
                 }
 
+                // Focus the element first (important for realistic input simulation)
+                element.focus();
+
                 // Clear existing text if requested
                 if (params.clear_first !== false) {
                     if (element.contentEditable === 'true') {
                         element.textContent = '';
                     } else {
                         element.value = '';
+                    }
+                    
+                    // Trigger events for clearing if content was cleared
+                    if (params.trigger_events !== false) {
+                        element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
                     }
                 }
 
@@ -315,10 +323,26 @@
                     element.value = params.text;
                 }
 
-                // Trigger events if requested
+                // Trigger realistic input events if requested
                 if (params.trigger_events !== false) {
-                    element.dispatchEvent(new Event('input', { bubbles: true }));
-                    element.dispatchEvent(new Event('change', { bubbles: true }));
+                    // Simulate focus events
+                    element.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
+                    
+                    // Simulate input event (fires during text input)
+                    element.dispatchEvent(new InputEvent('input', { 
+                        bubbles: true, 
+                        cancelable: true,
+                        inputType: 'insertText',
+                        data: params.text
+                    }));
+                    
+                    // Simulate change event (fires when input loses focus or value changes)
+                    element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+                    
+                    // Simulate blur event if we want complete interaction
+                    if (params.blur_after !== false) {
+                        element.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+                    }
                 }
 
                 return {

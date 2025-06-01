@@ -363,6 +363,40 @@
         }, 2500);
       }
 
+      // Add event listeners to test input_text change events
+      document.addEventListener('DOMContentLoaded', function() {
+        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
+        
+        if (usernameInput) {
+          usernameInput.addEventListener('input', function(e) {
+            console.log('Username input event fired:', e.target.value);
+          });
+          
+          usernameInput.addEventListener('change', function(e) {
+            console.log('Username change event fired:', e.target.value);
+          });
+          
+          usernameInput.addEventListener('focus', function(e) {
+            console.log('Username focus event fired');
+          });
+          
+          usernameInput.addEventListener('blur', function(e) {
+            console.log('Username blur event fired');
+          });
+        }
+        
+        if (emailInput) {
+          emailInput.addEventListener('input', function(e) {
+            console.log('Email input event fired:', e.target.value);
+          });
+          
+          emailInput.addEventListener('change', function(e) {
+            console.log('Email change event fired:', e.target.value);
+          });
+        }
+      });
+
       // Add some initial console messages to test early injection
       console.log('🌟 Very early log message - page script starting');
       console.info('📋 DOM content loading...');
