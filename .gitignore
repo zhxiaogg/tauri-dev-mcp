@@ -61,3 +61,4 @@ dist/
 *.tsbuildinfo
 
 .claude/
+**/tsconfig.tsbuildinfo

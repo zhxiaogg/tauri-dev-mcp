@@ -815,6 +815,59 @@ describe('Tauri Dev MCP Integration Tests', () => {
       })).rejects.toThrow();
     });
 
+    test('should propagate JavaScript errors from inspector to MCP server', async () => {
+      // Test with an invalid selector that should cause a JavaScript error
+      try {
+        await callMcpTool('inspect_element', {
+          selector: 'div:nth-child(invalid-syntax)'
+        });
+        throw new Error('Expected error was not thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        const errorMessage = (error as Error).message;
+        // Should contain the actual CSS selector error, not a generic message
+        expect(errorMessage).toContain('div:nth-child(invalid-syntax)');
+        expect(errorMessage).toContain('not a valid selector');
+        expect(errorMessage).not.toBe('Unknown error occurred');
+        testLog(`✅ inspect_element error: ${errorMessage.substring(0, 100)}...`);
+      }
+
+      // Test with invalid input_text selector
+      try {
+        await callMcpTool('input_text', {
+          selector: 'input[invalid[[syntax',
+          text: 'test'
+        });
+        throw new Error('Expected error was not thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        const errorMessage = (error as Error).message;
+        // Should contain the actual CSS selector error, not a generic message
+        expect(errorMessage).toContain('input[invalid[[syntax');
+        expect(errorMessage).toContain('not a valid selector');
+        expect(errorMessage).not.toBe('Unknown error occurred');
+        testLog(`✅ input_text error: ${errorMessage.substring(0, 100)}...`);
+      }
+
+      // Test with invalid click_element selector
+      try {
+        await callMcpTool('click_element', {
+          selector: 'button:has(invalid::syntax)'
+        });
+        throw new Error('Expected error was not thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        const errorMessage = (error as Error).message;
+        // Should contain the actual CSS selector error, not a generic message
+        expect(errorMessage).toContain('button:has(invalid::syntax)');
+        expect(errorMessage).toContain('not a valid selector');
+        expect(errorMessage).not.toBe('Unknown error occurred');
+        testLog(`✅ click_element error: ${errorMessage.substring(0, 100)}...`);
+      }
+
+      testLog('✅ JavaScript error propagation test completed - all detailed error messages validated');
+    });
+
     test('should handle non-existent elements', async () => {
       const result = await callMcpTool<InspectElementResult>('inspect_element', {
         selector: '#does-not-exist'

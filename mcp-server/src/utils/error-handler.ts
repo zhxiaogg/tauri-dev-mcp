@@ -16,7 +16,28 @@ export function createMcpError(code: number, message: string, data?: any) {
 export function handleTauriError(error: any): Error {
   console.debug('[Error Handler] Handling error:', error);
   
-  // Handle Tauri plugin errors
+  // Handle HTTP response errors (when response.success is false and we throw response.error)
+  if (error?.code && error?.message) {
+    // This is the structure from HTTP API: {code: "TOOL_ERROR", message: "..."}
+    switch (error.code) {
+      case 'TOOL_ERROR':
+        return new Error(error.message);
+      case 'ELEMENT_NOT_FOUND':
+        return new Error(`Element not found: ${error.message}`);
+      case 'ELEMENT_NOT_INTERACTABLE':
+        return new Error(`Element not interactable: ${error.message}`);
+      case 'WEBVIEW_NOT_READY':
+        return new Error('Tauri WebView is not ready');
+      case 'TIMEOUT':
+        return new Error('Operation timed out');
+      case 'CONNECTION_ERROR':
+        return new Error(`Connection error: ${error.message}`);
+      default:
+        return new Error(error.message);
+    }
+  }
+  
+  // Handle nested error structure (legacy format)
   if (error?.error?.code) {
     switch (error.error.code) {
       case 'ELEMENT_NOT_FOUND':
