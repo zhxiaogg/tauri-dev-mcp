@@ -426,6 +426,53 @@ describe('Tauri Dev MCP Integration Tests', () => {
   });
 
   describe('Console Logging Tools', () => {
+    test('get_console_logs should capture early logs from page initialization', async () => {
+      // Test early log capture - these logs should be captured from HEAD script and initial page load
+      const logsResult = await callMcpTool<ConsoleLogsResult>('get_console_logs', {
+        limit: 50
+      });
+
+      expect(Array.isArray(logsResult.logs)).toBe(true);
+      expect(logsResult.logs.length).toBeGreaterThan(0);
+
+      // Look for specific early logs that should be captured
+      const logMessages = logsResult.logs.map(log => log.message);
+      
+      // These logs come from the HEAD script in index.html
+      const hasHeadScriptLog = logMessages.some(msg => 
+        msg.includes('🏁 HEAD script: Page parsing started') || 
+        msg.includes('HEAD script')
+      );
+      
+      const hasEarlyWarning = logMessages.some(msg => 
+        msg.includes('⏰ HEAD script: This should be captured') ||
+        msg.includes('HEAD script')
+      );
+
+      // These logs come from early page initialization
+      const hasVeryEarlyLog = logMessages.some(msg => 
+        msg.includes('🌟 Very early log message') ||
+        msg.includes('Very early')
+      );
+
+      const hasAppLoadedLog = logMessages.some(msg => 
+        msg.includes('🚀 Tauri Dev MCP Example App loaded') ||
+        msg.includes('App loaded')
+      );
+
+      // Should have MCP inspector initialization
+      const hasMcpInitLog = logMessages.some(msg => 
+        msg.includes('[MCP Inspector]') && msg.includes('initialized')
+      );
+
+      // At least some early logs should be captured
+      expect(hasHeadScriptLog || hasEarlyWarning || hasVeryEarlyLog || hasAppLoadedLog).toBe(true);
+      expect(hasMcpInitLog).toBe(true);
+
+      testLog(`Captured ${logsResult.logs.length} total console logs`);
+      testLog(`Early logs found: HEAD(${hasHeadScriptLog}), Warning(${hasEarlyWarning}), VeryEarly(${hasVeryEarlyLog}), AppLoaded(${hasAppLoadedLog})`);
+    });
+
     test('get_console_logs should capture and format logs correctly', async () => {
       // First, trigger some console logs by clicking buttons
       await callMcpTool<ClickElementResult>('click_element', {

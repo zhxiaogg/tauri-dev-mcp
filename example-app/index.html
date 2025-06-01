@@ -5,6 +5,11 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tauri Dev MCP Example</title>
+    <script>
+      // Very early logs to test injection timing
+      console.log('🏁 HEAD script: Page parsing started');
+      console.warn('⏰ HEAD script: This should be captured if injection is early enough');
+    </script>
     <style>
       body {
         margin: 0;
@@ -358,9 +363,14 @@
         }, 2500);
       }
 
-      // Add some initial console messages
+      // Add some initial console messages to test early injection
+      console.log('🌟 Very early log message - page script starting');
+      console.info('📋 DOM content loading...');
+      console.debug('🔧 Setting up event handlers...');
       console.log('🚀 Tauri Dev MCP Example App loaded');
       console.info('This app is ready for MCP testing');
+      console.warn('⚠️ Testing warning level logging');
+      console.log('✨ All initial setup completed');
     </script>
   </body>
 </html>

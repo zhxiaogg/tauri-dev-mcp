@@ -56,10 +56,11 @@ impl<R: Runtime> WebViewBridge<R> {
     }
 
     pub async fn inject_inspector(&self) -> Result<(), String> {
-
-        // Always try to inject the inspector - the JavaScript will handle duplicate prevention
+        // Always inject - the JavaScript will handle duplicate prevention
+        // This is safer than trying to check since window.eval() doesn't return results in Tauri
         let inspector_js = include_str!("../js/inspector.js");
         self.execute_js(inspector_js).await?;
+        log::debug!("MCP Inspector injection attempted via bridge");
         
         Ok(())
     }

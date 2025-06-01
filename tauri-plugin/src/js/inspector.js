@@ -16,6 +16,13 @@
     // Console log buffer
     MCP.consoleLogs = MCP.consoleLogs || [];
     MCP.maxLogEntries = 1000;
+    
+    // Add initialization message
+    MCP.consoleLogs.push({
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        message: '[MCP Inspector] Console logging started'
+    });
 
     // Override console methods to capture logs
     const originalConsole = {
@@ -613,5 +620,5 @@
     // Mark as initialized to prevent re-initialization
     MCP.initialized = true;
     
-    console.log('Tauri Dev MCP Inspector initialized');
+    console.log('[MCP Inspector] Tauri Dev MCP Inspector initialized');
 })();
