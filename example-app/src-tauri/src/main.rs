@@ -25,8 +25,19 @@ fn main() {
     // Initialize logging to see MCP plugin messages
     env_logger::init();
     
-    tauri::Builder::default()
-        .plugin(tauri_dev_mcp::init())
+    #[cfg(debug_assertions)]
+    let app_builder = {
+        log::info!("🔌 Tauri Dev MCP plugin enabled (debug build)");
+        tauri::Builder::default().plugin(tauri_dev_mcp::init())
+    };
+    
+    #[cfg(not(debug_assertions))]
+    let app_builder = {
+        log::info!("🚫 Tauri Dev MCP plugin disabled (release build)");
+        tauri::Builder::default()
+    };
+    
+    app_builder
         .invoke_handler(tauri::generate_handler![
             get_app_version,
             greet,

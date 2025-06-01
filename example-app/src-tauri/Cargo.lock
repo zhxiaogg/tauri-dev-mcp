@@ -3366,6 +3366,7 @@ version = "0.0.0"
 dependencies = [
  "chrono",
  "env_logger",
+ "log",
  "serde",
  "serde_json",
  "tauri",
